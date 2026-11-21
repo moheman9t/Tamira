@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="تعميرة" />
+  <title>تعميرة — إدارة الطلبات</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card: #111827;
+      --card-2: #1e293b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #22c55e;
+      --accent-dark: #16a34a;
+      --danger: #ef4444;
+      --warn: #f59e0b;
+      --border: #243044;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Kufi Arabic", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 16px 14px 80px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: var(--card-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+      outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 11px 16px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: var(--accent);
+      transition: opacity 0.15s ease;
+    }
+
+    button:hover {
+      opacity: 0.92;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      padding: 8px 12px;
+      font-size: 0.82rem;
+    }
+
+    .btn-warn {
+      background: var(--warn);
+      color: #0f172a;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .tab-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .order-item {
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .order-title {
+      font-weight: 800;
+      font-size: 0.98rem;
+      margin-bottom: 4px;
+    }
+
+    .order-meta {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+
+    .badge-active {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fbbf24;
+    }
+
+    .badge-done {
+      background: rgba(34, 197, 94, 0.18);
+      color: #4ade80;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 96px;
+    }
+
+    .status-msg {
+      font-size: 0.84rem;
+      padding: 10px 12px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      background: rgba(34, 197, 94, 0.14);
+      color: #86efac;
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      display: none;
+    }
+
+    .status-msg.error {
+      background: rgba(239, 68, 68, 0.14);
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stat-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-num {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .stat-lbl {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <h1>تعميرة</h1>
+        <p id="userSubtitle">نظام إدارة الطلبات السحابي</p>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button id="refreshBtn" class="btn-secondary hidden" onclick="syncAll()">تحديث</button>
+        <button id="logoutBtn" class="btn-secondary hidden" onclick="signOutUser()">خروج</button>
+      </div>
+    </div>
+
+    <div id="statusBox" class="status-msg"></div>
+
+    <!-- شاشة تسجيل الدخول -->
+    <div id="authCard" class="card">
+      <h2>تسجيل الدخول إلى حسابك</h2>
+      <p style="color:var(--muted); font-size:0.86rem; margin-top:0;">
+        أدخل البريد الإلكتروني وكلمة المرور الخاصة بحسابك في Supabase.
+      </p>
+      <label for="emailInput">البريد الإلكتروني</label>
+      <input id="emailInput" type="email" placeholder="example@gmail.com" autocomplete="email" />
+
+      <label for="passwordInput">كلمة المرور</label>
+      <input id="passwordInput" type="password" placeholder="••••••••" autocomplete="current-password" />
+
+      <button id="loginBtn" style="width:100%;" onclick="signInUser()">دخول</button>
+    </div>
+
+    <!-- شاشة التطبيق بعد الدخول -->
+    <div id="appSection" class="hidden">
+      <div class="stats">
+        <div class="stat-box">
+          <div id="statTotal" class="stat-num">0</div>
+          <div class="stat-lbl">إجمالي الطلبات</div>
+        </div>
+        <div class="stat-box">
+          <div id="statActive" class="stat-num">0</div>
+          <div class="stat-lbl">قيد التجهيز</div>
+        </div>
+        <div class="stat-box">
+          <div id="statRevenue" class="stat-num">0</div>
+          <div class="stat-lbl">مجموع الحساب</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button id="tabOrdersBtn" class="tab-btn active" onclick="switchTab('orders')">الطلبات</button>
+        <button id="tabNewBtn" class="tab-btn" onclick="switchTab('new')">طلب جديد</button>
+        <button id="tabConfigBtn" class="tab-btn" onclick="switchTab('config')">الإعدادات</button>
+      </div>
+
+      <!-- تبويب الطلبات -->
+      <div id="ordersTab" class="card">
+        <h2>قائمة الطلبات</h2>
+        <div id="ordersList">جارٍ التحميل...</div>
+      </div>
+
+      <!-- تبويب طلب جديد -->
+      <div id="newOrderTab" class="card hidden">
+        <h2>إضافة طلب جديد</h2>
+        <div class="row">
+          <div>
+            <label for="tableInput">رقم الطاولة / المكان</label>
+            <input id="tableInput" type="text" placeholder="مثال: طاولة 4" />
+          </div>
+          <div>
+            <label for="priceInput">السعر</label>
+            <input id="priceInput" type="number" step="any" placeholder="مثال: 10000" />
+          </div>
+        </div>
+
+        <label for="itemInput">التفاصيل / النوع / النكهة</label>
+        <input id="itemInput" type="text" placeholder="مثال: تفاحتين + فحم إضافي" />
+
+        <label for="notesInput">ملاحظات (اختياري)</label>
+        <textarea id="notesInput" rows="2" placeholder="أي ملاحظة إضافية..."></textarea>
+
+        <button style="width:100%;" onclick="createOrder()">حفظ وإرسال الطلب</button>
+      </div>
+
+      <!-- تبويب الإعدادات -->
+      <div id="configTab" class="card hidden">
+        <h2>إعدادات التطبيق (app_config)</h2>
+        <label for="shopNameInput">اسم المكان / الفرع</label>
+        <input id="shopNameInput" type="text" placeholder="مقهى تعميرة" />
+
+        <label for="defaultPriceInput">السعر الافتراضي للطلب</label>
+        <input id="defaultPriceInput" type="number" step="any" placeholder="0" />
+
+        <label for="currencyInput">رمز العملة</label>
+        <input id="currencyInput" type="text" placeholder="د.ع" />
+
+        <button style="width:100%;" onclick="saveConfig()">حفظ الإعدادات</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://jlkrjxffpczukoibyclj.supabase.co";
+    const SUPABASE_ANON_KEY = "Sb_publishable_eh1luqIS9-i29fAT78hWow_haUmA4Es";
+
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser = null;
+    let ordersCache = [];
+    let configCache = {
+      shopName: "تعميرة",
+      defaultPrice: 0,
+      currency: "د.ع"
+    };
+
+    function showStatus(msg, isError = false) {
+      const box = document.getElementById("statusBox");
+      box.textContent = msg;
+      box.className = isError ? "status-msg error" : "status-msg";
+      box.style.display = "block";
+      clearTimeout(window.__statusTimer);
+      window.__statusTimer = setTimeout(() => {
+        box.style.display = "none";
+      }, 4000);
+    }
+
+    function switchTab(tab) {
+      document.getElementById("ordersTab").classList.toggle("hidden", tab !== "orders");
+      document.getElementById("newOrderTab").classList.toggle("hidden", tab !== "new");
+      document.getElementById("configTab").classList.toggle("hidden", tab !== "config");
+
+      document.getElementById("tabOrdersBtn").classList.toggle("active", tab === "orders");
+      document.getElementById("tabNewBtn").classList.toggle("active", tab === "new");
+      document.getElementById("tabConfigBtn").classList.toggle("active", tab === "config");
+
+      if (tab === "new") {
+        const p = Number(configCache.defaultPrice || 0);
+        if (p > 0 && !document.getElementById("priceInput").value) {
+          document.getElementById("priceInput").value = p;
+        }
+      }
+    }
+
+    async function signInUser() {
+      const email = document.getElementById("emailInput").value.trim();
+      const password = document.getElementById("passwordInput").value;
+      const btn = document.getElementById("loginBtn");
+
+      if (!email || !password) {
+        showStatus("يرجى إدخال البريد الإلكتروني وكلمة المرور.", true);
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "جارٍ الدخول...";
+
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+      btn.disabled = false;
+      btn.textContent = "دخول";
+
+      if (error) {
+        showStatus("فشل تسجيل الدخول: " + error.message, true);
+        return;
+      }
+
+      currentUser = data.user;
+      onAuthenticated();
+    }
+
+    async function signOutUser() {
+      await sb.auth.signOut();
+      currentUser = null;
+      ordersCache = [];
+      document.getElementById("appSection").classList.add("hidden");
+      document.getElementById("logoutBtn").classList.add("hidden");
+      document.getElementById("refreshBtn").classList.add("hidden");
+      document.getElementById("authCard").classList.remove("hidden");
+      document.getElementById("userSubtitle").textContent = "نظام إدارة الطلبات السحابي";
+      showStatus("تم تسجيل الخروج.");
+    }
+
+    function onAuthenticated() {
+      document.getElementById("authCard").classList.add("hidden");
+      document.getElementById("appSection").classList.remove("hidden");
+      document.getElementById("logoutBtn").classList.remove("hidden");
+      document.getElementById("refreshBtn").classList.remove("hidden");
+      document.getElementById("userSubtitle").textContent = currentUser.email || "متصل بالسحابة";
+      syncAll();
+    }
+
+    async function syncAll() {
+      if (!currentUser) return;
+      await Promise.all([loadConfig(), loadOrders()]);
+      renderStats();
+      renderOrders();
+    }
+
+    async function loadConfig() {
+      const { data, error } = await sb
+        .from("app_config")
+        .select("config")
+        .eq("user_id", currentUser.id)
+        .maybeSingle();
+
+      if (error) {
+        showStatus("تعذر تحميل الإعدادات: " + error.message, true);
+        return;
+      }
+
+      if (data && data.config) {
+        configCache = { ...configCache, ...data.config };
+      }
+
+      document.getElementById("shopNameInput").value = configCache.shopName || "";
+      document.getElementById("defaultPriceInput").value = configCache.defaultPrice ?? 0;
+      document.getElementById("currencyInput").value = configCache.currency || "د.ع";
+      if (configCache.shopName) {
+        document.title = configCache.shopName + " — إدارة الطلبات";
+      }
+    }
+
+    async function saveConfig() {
+      if (!currentUser) return;
+
+      const updated = {
+        shopName: document.getElementById("shopNameInput").value.trim() || "تعميرة",
+        defaultPrice: Number(document.getElementById("defaultPriceInput").value || 0),
+        currency: document.getElementById("currencyInput").value.trim() || "د.ع"
+      };
+
+      const { error } = await sb
+        .from("app_config")
+        .upsert({
+          user_id: currentUser.id,
+          config: updated,
+          updated_at: new Date().toISOString()
+        }, { onConflict: "user_id" });
+
+      if (error) {
+        showStatus("فشل حفظ الإعدادات: " + error.message, true);
+        return;
+      }
+
+      configCache = updated;
+      document.title = updated.shopName + " — إدارة الطلبات";
+      renderStats();
+      renderOrders();
+      showStatus("تم حفظ الإعدادات بنجاح.");
+    }
+
+    async function loadOrders() {
+      const { data, error } = await sb
+        .from("orders")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .order("created_at_ms", { ascending: false });
+
+      if (error) {
+        showStatus("تعذر تحميل الطلبات: " + error.message, true);
+        return;
+      }
+
+      ordersCache = data || [];
+    }
+
+    async function createOrder() {
+      if (!currentUser) return;
+
+      const tableName = document.getElementById("tableInput").value.trim() || "بدون رقم";
+      const itemText = document.getElementById("itemInput").value.trim();
+      const notesText = document.getElementById("notesInput").value.trim();
+      const priceVal = Number(document.getElementById("priceInput").value || configCache.defaultPrice || 0);
+
+      if (!itemText) {
+        showStatus("يرجى كتابة تفاصيل الطلب.", true);
+        return;
+      }
+
+      const nowMs = Date.now();
+      const orderId = nowMs;
+      const nextOrderNo = (ordersCache.reduce((max, o) => Math.max(max, Number(o.order_no || 0)), 0)) + 1;
+
+      const payload = {
+        id: orderId,
+        user_id: currentUser.id,
+        order_no: nextOrderNo,
+        created_at_ms: nowMs,
+        data: {
+          table: tableName,
+          item: itemText,
+          notes: notesText,
+          price: priceVal,
+          status: "active"
+        },
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await sb.from("orders").insert(payload);
+
+      if (error) {
+        showStatus("فشل إضافة الطلب: " + error.message, true);
+        return;
+      }
+
+      document.getElementById("tableInput").value = "";
+      document.getElementById("itemInput").value = "";
+      document.getElementById("notesInput").value = "";
+      document.getElementById("priceInput").value = configCache.defaultPrice || "";
+
+      await loadOrders();
+      renderStats();
+      renderOrders();
+      switchTab("orders");
+      showStatus("تمت إضافة الطلب #" + nextOrderNo);
+    }
+
+    async function toggleOrderStatus(orderId) {
+      const target = ordersCache.find(o => o.id === orderId);
+      if (!target) return;
+
+      const currentStatus = (target.data && target.data.status) || "active";
+      const nextStatus = currentStatus === "active" ? "done" : "active";
+      const nextData = { ...(target.data || {}), status: nextStatus };
+
+      const { error } = await sb
+        .from("orders")
+        .update({
+          data: nextData,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", orderId)
+        .eq("user_id", currentUser.id);
+
+      if (error) {
+        showStatus("تعذر تحديث حالة الطلب: " + error.message, true);
+        return;
+      }
+
+      target.data = nextData;
+      renderStats();
+      renderOrders();
+      showStatus(nextStatus === "done" ? "تم إكمال الطلب." : "تمت إعادة الطلب لقيد التجهيز.");
+    }
+
+    async function deleteOrder(orderId) {
+      const { error } = await sb
+        .from("orders")
+        .delete()
+        .eq("id", orderId)
+        .eq("user_id", currentUser.id);
+
+      if (error) {
+        showStatus("تعذر حذف الطلب: " + error.message, true);
+        return;
+      }
+
+      ordersCache = ordersCache.filter(o => o.id !== orderId);
+      renderStats();
+      renderOrders();
+      showStatus("تم حذف الطلب.");
+    }
+
+    function renderStats() {
+      const total = ordersCache.length;
+      const active = ordersCache.filter(o => (o.data && o.data.status) !== "done").length;
+      const revenue = ordersCache.reduce((sum, o) => sum + Number((o.data && o.data.price) || 0), 0);
+      const curr = configCache.currency || "د.ع";
+
+      document.getElementById("statTotal").textContent = total;
+      document.getElementById("statActive").textContent = active;
+      document.getElementById("statRevenue").textContent = revenue.toLocaleString() + " " + curr;
+    }
+
+    function renderOrders() {
+      const container = document.getElementById("ordersList");
+      if (!ordersCache.length) {
+        container.innerHTML = '<p style="color:var(--muted); text-align:center; margin:16px 0;">لا توجد طلبات حالياً.</p>';
+        return;
+      }
+
+      const curr = configCache.currency || "د.ع";
+
+      container.innerHTML = ordersCache.map(o => {
+        const d = o.data || {};
+        const isDone = d.status === "done";
+        const timeStr = o.created_at_ms
+          ? new Date(Number(o.created_at_ms)).toLocaleTimeString("ar-IQ", { hour: "2-digit", minute: "2-digit" })
+          : "";
+
+        return `
+          <div class="order-item">
+            <div>
+              <div class="order-title">#${o.order_no || "-"} — ${escapeHtml(d.table || "بدون رقم")}</div>
+              <div class="order-meta">
+                <strong>الطلب:</strong> ${escapeHtml(d.item || "")}<br/>
+                <strong>السعر:</strong> ${Number(d.price || 0).toLocaleString()} ${escapeHtml(curr)}
+                ${timeStr ? ` • <span>${timeStr}</span>` : ""}
+                ${d.notes ? `<br/><strong>ملاحظة:</strong> ${escapeHtml(d.notes)}` : ""}
+              </div>
+              <span class="badge ${isDone ? "badge-done" : "badge-active"}">
+                ${isDone ? "مكتمل" : "قيد التجهيز"}
+              </span>
+            </div>
+            <div class="actions">
+              <button class="btn-warn" onclick="toggleOrderStatus(${o.id})">
+                ${isDone ? "إعادة" : "إتمام"}
+              </button>
+              <button class="btn-danger" onclick="deleteOrder(${o.id})">حذف</button>
+            </div>
+          </div>
+        `;
+      })
